@@ -77,7 +77,7 @@ void atualizar_matriz_leds(uint16_t umidade) {
     int leds_acesos = (umidade * LED_COUNT) / 4095;  // Calcula quantos LEDs devem estar acesos
 
     for (int i = 0; i < leds_acesos; i++) {
-        npSetLED(i, 0, 50, 0);  // Verde para indicar umidade
+        npSetLED(i, 0, 0, 50);  
     }
     npWrite();
 }
@@ -91,7 +91,6 @@ bool botao_pressionado(uint pin) {
         sleep_ms(100);  // Debounce
         if (gpio_get(pin) == 0) {  // Confirmação
             while (gpio_get(pin) == 0);  // Espera soltar o botão
-            printf("Botao pressionado no pino %d!\n", pin);  // Depuração
             return true;
         }
     }
@@ -196,10 +195,10 @@ int main() {
 
         if (umidade_simulada < LIMITE_UMIDADE_BAIXA) {
             ssd1306_draw_string(&ssd, "Umidade:", 8, 25); // Umidade baixa
-            ssd1306_draw_string(&ssd, "Baixa", 8, 35); // Umidade baixa
+            ssd1306_draw_string(&ssd, "Alta", 8, 35); // Umidade baixa
         } else if (umidade_simulada > LIMITE_UMIDADE_ALTA) {
             ssd1306_draw_string(&ssd, "Umidade:", 8, 25); // Umidade alta
-            ssd1306_draw_string(&ssd, "Alta", 8, 35); // Umidade alta
+            ssd1306_draw_string(&ssd, "Baixa", 8, 35); // Umidade alta
         } else {
             ssd1306_draw_string(&ssd, "Umidade:", 8, 25); // Umidade moderada
             ssd1306_draw_string(&ssd, "Moderada", 8, 35); // Umidade moderada
@@ -228,16 +227,16 @@ int main() {
         } else {
             // Modo automático: ativa a irrigação se a umidade estiver baixa
             if (umidade_simulada < LIMITE_UMIDADE_BAIXA) {
+
+                alerta_umidade_alta();  // Toca o alerta de umidade alta
+            } else if (umidade_simulada > LIMITE_UMIDADE_ALTA) {
                 gpio_put(PINO_RELE, 1);
                 alerta_baixa_umidade();  // Toca o alerta de baixa umidade
                 ssd1306_draw_string(&ssd, "Irrigando...", 8, 48);
                 ssd1306_send_data(&ssd); // Atualiza o display
                 sleep_ms(4000);  // Mantém a irrigação ativa por 4 segundos
                 gpio_put(PINO_RELE, 0);
-                sleep_ms(1000);  // Mantém a mensagem "Irrigando..." por mais 1 segundo
-            } else if (umidade_simulada > LIMITE_UMIDADE_ALTA) {
-                alerta_umidade_alta();  // Toca o alerta de umidade alta
-            } else {
+                sleep_ms(1000);  // Mantém a mensagem "Irrigando..." por mais 1 segundo            } else {
                 gpio_put(PINO_RELE, 0);
                 gpio_put(PINO_LED_VERMELHO, 0);  // Desliga o LED vermelho
                 ssd1306_draw_string(&ssd, "Modo automatico", 5, 48);
